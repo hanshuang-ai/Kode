@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日志查看器 - Request/Response 分析</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .controls {
+            background: white;
+            padding: 15px 20px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .file-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-input {
+            padding: 8px 12px;
+            border: 2px solid #667eea;
+            border-radius: 6px;
+            background: white;
+            color: #667eea;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .file-input:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .stat-item {
+            padding: 5px 10px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border: 1px solid #e9ecef;
+        }
+
+        .main-content {
+            display: flex;
+            height: calc(100vh - 180px);
+        }
+
+        .column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .column-header {
+            background: white;
+            padding: 15px 20px;
+            border-bottom: 2px solid #ddd;
+            font-weight: bold;
+            font-size: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .request-header {
+            background: linear-gradient(135deg, #667eea 0%, #5a67d8 100%);
+            color: white;
+        }
+
+        .response-header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .request-content {
+            background: #f8f9ff;
+            border-right: 1px solid #ddd;
+        }
+
+        .response-content {
+            background: #fff8f8;
+        }
+
+        .log-entry {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .response-entry {
+            border-left-color: #f5576c;
+        }
+
+        .entry-header {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .entry-number {
+            background: #667eea;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .response-entry .entry-number {
+            background: #f5576c;
+        }
+
+        .json-content {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .stream-content {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .stream-line {
+            margin: 2px 0;
+        }
+
+        .event-line {
+            color: #569cd6;
+        }
+
+        .data-line {
+            color: #ce9178;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px;
+            border-left: 4px solid #c33;
+        }
+
+        .scroll-sync {
+            position: sticky;
+            bottom: 20px;
+            right: 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .scroll-sync:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+        }
+
+        .pagination {
+            background: white;
+            padding: 15px 20px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #667eea;
+            color: white;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination button.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .pagination-info {
+            color: #666;
+            font-size: 14px;
+            margin: 0 10px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .highlight {
+            background-color: #fff3cd;
+            border-left-color: #ffc107;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+
+            .column {
+                min-height: 300px;
+            }
+
+            .request-content {
+                border-right: none;
+                border-bottom: 1px solid #ddd;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 日志查看器</h1>
+        <p>Request Body 与 Response Body 对比分析工具</p>
+    </div>
+
+    <div class="controls">
+        <div class="file-input-wrapper">
+            <input type="file" id="fileInput" accept=".log,.txt" style="display: none;">
+            <button class="file-input" onclick="document.getElementById('fileInput').click()">
+                📁 选择日志文件
+            </button>
+            <button class="file-input" onclick="loadDefaultLog()">
+                📋 尝试自动加载
+            </button>
+            <button class="file-input" onclick="showDebugInfo()">
+                🔍 调试信息
+            </button>
+        </div>
+        <div class="stats">
+            <div class="stat-item">
+                <span>请求数: </span>
+                <span id="requestCount">0</span>
+            </div>
+            <div class="stat-item">
+                <span>响应数: </span>
+                <span id="responseCount">0</span>
+            </div>
+            <div class="stat-item">
+                <span>总条目: </span>
+                <span id="totalCount">0</span>
+            </div>
+            <div class="stat-item">
+                <span>每页显示: </span>
+                <select id="pageSize" onchange="changePageSize()" style="padding: 2px 5px; border-radius: 3px; border: 1px solid #ddd;">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="all">全部</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="column">
+            <div class="column-header request-header">
+                <span>📤 Request Body</span>
+                <span id="requestBadge" style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 12px; font-size: 12px;">0</span>
+            </div>
+            <div class="content request-content" id="requestContent">
+                <div class="loading">
+                    <p>📂 请选择日志文件或点击"加载默认日志"按钮</p>
+                    <p style="margin-top: 10px; font-size: 14px;">支持格式: .log, .txt</p>
+                </div>
+            </div>
+            <div class="pagination" id="requestPagination" style="display: none;">
+                <!-- 分页控件将在这里动态生成 -->
+            </div>
+        </div>
+
+        <div class="column">
+            <div class="column-header response-header">
+                <span>📥 Response Body</span>
+                <span id="responseBadge" style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 12px; font-size: 12px;">0</span>
+            </div>
+            <div class="content response-content" id="responseContent">
+                <div class="loading">
+                    <p>📂 等待加载日志数据...</p>
+                </div>
+            </div>
+            <div class="pagination" id="responsePagination" style="display: none;">
+                <!-- 分页控件将在这里动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <button class="scroll-sync" onclick="scrollToTop()" style="display: none;" id="scrollTopBtn">
+        ⬆️ 回到顶部
+    </button>
+
+    <script>
+        let requestData = [];
+        let responseData = [];
+        let scrollSyncEnabled = true;
+        let currentPage = 1;
+        let pageSize = 10;
+
+        // 文件输入处理
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                readFile(file);
+            }
+        });
+
+        // 读取文件
+        function readFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                parseLogContent(content);
+            };
+            reader.readAsText(file);
+        }
+
+        // 加载默认日志
+        async function loadDefaultLog() {
+            try {
+                // 尝试多种可能的路径
+                const possiblePaths = [
+                    './app.log',
+                    'app.log',
+                    './文档/app.log',
+                    '文档/app.log',
+                    './logs/app.log',
+                    'logs/app.log'
+                ];
+
+                let content = null;
+                let loadedPath = null;
+
+                for (const path of possiblePaths) {
+                    try {
+                        const response = await fetch(path);
+                        if (response.ok) {
+                            content = await response.text();
+                            loadedPath = path;
+                            break;
+                        }
+                    } catch (e) {
+                        // 继续尝试下一个路径
+                        continue;
+                    }
+                }
+
+                if (content) {
+                    console.log(`成功加载日志文件: ${loadedPath}`);
+                    parseLogContent(content);
+                } else {
+                    showError('无法找到app.log文件。请手动选择日志文件。');
+                }
+            } catch (error) {
+                showError('加载默认日志文件时出错: ' + error.message);
+                console.error('加载错误:', error);
+            }
+        }
+
+        // 解析日志内容
+        function parseLogContent(content) {
+            try {
+                requestData = [];
+                responseData = [];
+
+                console.log('开始解析日志内容，总长度:', content.length);
+
+                // 检查是否是HTML内容（错误加载）
+                if (content.includes('<!DOCTYPE html>') || content.includes('<html')) {
+                    throw new Error('加载的是HTML文件而不是日志文件，请手动选择app.log文件');
+                }
+
+                // 使用逐行解析的方法，更准确
+                const lines = content.split('\n');
+                let currentType = null;
+                let currentContent = [];
+                let inContent = false;
+                let entryCount = 0;
+
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+
+                    // 检查分隔线
+                    if (line === '--------------------------------------------------------------------------------------') {
+                        // 查看前面几行是否有Request Body或Response Body标识
+                        let foundType = null;
+                        for (let j = i - 1; j >= Math.max(0, i - 3); j--) {
+                            const prevLine = lines[j].trim();
+                            if (prevLine === 'Request Body:') {
+                                foundType = 'request';
+                                break;
+                            } else if (prevLine === 'Response Body:') {
+                                foundType = 'response';
+                                break;
+                            }
+                        }
+
+                        if (foundType) {
+                            // 保存之前的内容
+                            if (currentType && currentContent.length > 0) {
+                                const contentStr = currentContent.join('\n').trim();
+                                if (contentStr) {
+                                    if (currentType === 'request') {
+                                        requestData.push(contentStr);
+                                        console.log(`保存请求 #${requestData.length}, 长度: ${contentStr.length}`);
+                                    } else if (currentType === 'response') {
+                                        responseData.push(contentStr);
+                                        console.log(`保存响应 #${responseData.length}, 长度: ${contentStr.length}`);
+                                    }
+                                    entryCount++;
+                                }
+                            }
+
+                            // 开始新条目
+                            currentType = foundType;
+                            currentContent = [];
+                            inContent = false;
+                        }
+                    } else if (currentType !== null) {
+                        // 检查是否是内容开始
+                        if ((line.startsWith('{') || line.startsWith('event:')) && !inContent) {
+                            inContent = true;
+                        }
+
+                        // 收集内容行（跳过空行和标识行）
+                        if (inContent && line &&
+                            line !== 'Request Body:' &&
+                            line !== 'Response Body:' &&
+                            line !== '--------------------------------------------------------------------------------------') {
+                            currentContent.push(lines[i]); // 使用原始行（保留格式）
+                        }
+                    }
+                }
+
+                // 处理最后一个条目
+                if (currentType && currentContent.length > 0) {
+                    const contentStr = currentContent.join('\n').trim();
+                    if (contentStr) {
+                        if (currentType === 'request') {
+                            requestData.push(contentStr);
+                            console.log(`保存最后请求 #${requestData.length}, 长度: ${contentStr.length}`);
+                        } else if (currentType === 'response') {
+                            responseData.push(contentStr);
+                            console.log(`保存最后响应 #${responseData.length}, 长度: ${contentStr.length}`);
+                        }
+                        entryCount++;
+                    }
+                }
+
+                console.log('解析完成:', {
+                    totalEntries: entryCount,
+                    requests: requestData.length,
+                    responses: responseData.length
+                });
+
+                // 验证解析结果
+                if (requestData.length !== responseData.length) {
+                    console.warn('请求和响应数量不匹配:', {
+                        requests: requestData.length,
+                        responses: responseData.length
+                    });
+
+                    // 尝试平衡数据
+                    const minLength = Math.min(requestData.length, responseData.length);
+                    if (minLength > 0) {
+                        console.log(`截取前${minLength}对数据进行显示`);
+                        requestData = requestData.slice(0, minLength);
+                        responseData = responseData.slice(0, minLength);
+                    }
+                }
+
+                // 如果解析结果为空，尝试备用方法
+                if (requestData.length === 0 && responseData.length === 0) {
+                    console.log('使用备用解析方法...');
+                    parseWithAlternativeMethod(content);
+                } else {
+                    displayData();
+                    updateStats();
+                }
+            } catch (error) {
+                showError('解析日志文件时出错: ' + error.message);
+                console.error('解析错误:', error);
+            }
+        }
+
+        // 备用解析方法 - 使用正则表达式匹配
+        function parseWithAlternativeMethod(content) {
+            try {
+                console.log('使用备用解析方法...');
+
+                // 使用正则表达式匹配Request Body和Response Body块
+                const requestPattern = /Request Body:\s*--------------------------------------------------------------------------------------([\s\S]*?)(?=--------------------------------------------------------------------------------------|$)/g;
+                const responsePattern = /Response Body:\s*--------------------------------------------------------------------------------------([\s\S]*?)(?=--------------------------------------------------------------------------------------|$)/g;
+
+                let requestMatch;
+                let responseMatch;
+
+                // 提取所有Request Body
+                while ((requestMatch = requestPattern.exec(content)) !== null) {
+                    const requestContent = requestMatch[1].trim();
+                    if (requestContent) {
+                        requestData.push(requestContent);
+                        console.log(`备用方法 - 保存请求 #${requestData.length}, 长度: ${requestContent.length}`);
+                    }
+                }
+
+                // 提取所有Response Body
+                while ((responseMatch = responsePattern.exec(content)) !== null) {
+                    const responseContent = responseMatch[1].trim();
+                    if (responseContent) {
+                        responseData.push(responseContent);
+                        console.log(`备用方法 - 保存响应 #${responseData.length}, 长度: ${responseContent.length}`);
+                    }
+                }
+
+                console.log('备用方法解析结果:', {
+                    requests: requestData.length,
+                    responses: responseData.length
+                });
+
+                // 验证并平衡数据
+                if (requestData.length !== responseData.length) {
+                    console.warn('备用方法也发现数量不匹配:', {
+                        requests: requestData.length,
+                        responses: responseData.length
+                    });
+
+                    // 尝试配对数据
+                    const minLength = Math.min(requestData.length, responseData.length);
+                    if (minLength > 0) {
+                        console.log(`备用方法截取前${minLength}对数据进行显示`);
+                        requestData = requestData.slice(0, minLength);
+                        responseData = responseData.slice(0, minLength);
+                    }
+                }
+
+                if (requestData.length > 0 || responseData.length > 0) {
+                    displayData();
+                    updateStats();
+                } else {
+                    showError('无法解析日志文件，请检查文件格式是否正确');
+                }
+            } catch (error) {
+                showError('备用解析方法也失败: ' + error.message);
+                console.error('备用解析错误:', error);
+            }
+        }
+
+        // 显示数据
+        function displayData() {
+            updatePageDisplay();
+
+            // 更新徽章
+            document.getElementById('requestBadge').textContent = requestData.length;
+            document.getElementById('responseBadge').textContent = responseData.length;
+
+            // 添加滚动监听
+            addScrollListeners();
+        }
+
+        // 更新页面显示
+        function updatePageDisplay() {
+            const requestContainer = document.getElementById('requestContent');
+            const responseContainer = document.getElementById('responseContent');
+
+            requestContainer.innerHTML = '';
+            responseContainer.innerHTML = '';
+
+            // 计算分页范围
+            const startIndex = (currentPage - 1) * pageSize;
+            const endIndex = pageSize === 'all' ? requestData.length : Math.min(startIndex + pageSize, requestData.length);
+
+            // 显示当前页的请求数据
+            for (let i = startIndex; i < endIndex && i < requestData.length; i++) {
+                const entry = createLogEntry(requestData[i], i + 1, 'request');
+                requestContainer.appendChild(entry);
+            }
+
+            // 显示当前页的响应数据
+            for (let i = startIndex; i < endIndex && i < responseData.length; i++) {
+                const entry = createLogEntry(responseData[i], i + 1, 'response');
+                responseContainer.appendChild(entry);
+            }
+
+            // 更新分页控件
+            updatePaginationControls();
+        }
+
+        // 更新分页控件
+        function updatePaginationControls() {
+            const requestPagination = document.getElementById('requestPagination');
+            const responsePagination = document.getElementById('responsePagination');
+
+            const totalItems = Math.max(requestData.length, responseData.length);
+            const totalPages = pageSize === 'all' ? 1 : Math.ceil(totalItems / pageSize);
+
+            if (totalPages > 1 || pageSize === 'all') {
+                const paginationHTML = createPaginationHTML(totalItems, totalPages);
+                requestPagination.innerHTML = paginationHTML;
+                responsePagination.innerHTML = paginationHTML;
+                requestPagination.style.display = 'flex';
+                responsePagination.style.display = 'flex';
+            } else {
+                requestPagination.style.display = 'none';
+                responsePagination.style.display = 'none';
+            }
+        }
+
+        // 创建分页HTML
+        function createPaginationHTML(totalItems, totalPages) {
+            if (pageSize === 'all') {
+                return `<div class="pagination-info">显示全部 ${totalItems} 个条目</div>`;
+            }
+
+            let html = '';
+
+            // 上一页按钮
+            html += `<button onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>上一页</button>`;
+
+            // 页码按钮
+            const maxButtons = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+            let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+
+            if (endPage - startPage + 1 < maxButtons) {
+                startPage = Math.max(1, endPage - maxButtons + 1);
+            }
+
+            if (startPage > 1) {
+                html += `<button onclick="goToPage(1)">1</button>`;
+                if (startPage > 2) {
+                    html += `<span>...</span>`;
+                }
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button onclick="goToPage(${i})" ${i === currentPage ? 'class="active"' : ''}>${i}</button>`;
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    html += `<span>...</span>`;
+                }
+                html += `<button onclick="goToPage(${totalPages})">${totalPages}</button>`;
+            }
+
+            // 下一页按钮
+            html += `<button onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>下一页</button>`;
+
+            // 页面信息
+            const startItem = (currentPage - 1) * pageSize + 1;
+            const endItem = Math.min(currentPage * pageSize, totalItems);
+            html += `<div class="pagination-info">${startItem}-${endItem} / ${totalItems}</div>`;
+
+            return html;
+        }
+
+        // 跳转到指定页面
+        function goToPage(page) {
+            const totalItems = Math.max(requestData.length, responseData.length);
+            const totalPages = pageSize === 'all' ? 1 : Math.ceil(totalItems / pageSize);
+
+            if (page >= 1 && page <= totalPages) {
+                currentPage = page;
+                updatePageDisplay();
+            }
+        }
+
+        // 改变每页显示数量
+        function changePageSize() {
+            const newPageSize = document.getElementById('pageSize').value;
+            pageSize = newPageSize === 'all' ? 'all' : parseInt(newPageSize);
+            currentPage = 1; // 重置到第一页
+            updatePageDisplay();
+        }
+
+        // 创建日志条目
+        function createLogEntry(content, number, type) {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}-entry`;
+            entry.id = `${type}-${number}`;
+
+            const header = document.createElement('div');
+            header.className = 'entry-header';
+            header.innerHTML = `
+                <span>${type === 'request' ? '📤' : '📥'} ${type === 'request' ? 'Request' : 'Response'} #${number}</span>
+                <span class="entry-number">#${number}</span>
+            `;
+
+            const contentDiv = document.createElement('div');
+
+            if (type === 'request') {
+                // 尝试格式化JSON
+                try {
+                    const json = JSON.parse(content);
+                    contentDiv.className = 'json-content';
+                    contentDiv.textContent = JSON.stringify(json, null, 2);
+                } catch (e) {
+                    contentDiv.className = 'json-content';
+                    contentDiv.textContent = content;
+                }
+            } else {
+                // 响应内容，处理流式数据
+                contentDiv.className = 'stream-content';
+                contentDiv.innerHTML = formatStreamContent(content);
+            }
+
+            entry.appendChild(header);
+            entry.appendChild(contentDiv);
+
+            // 添加点击高亮功能
+            entry.addEventListener('click', function() {
+                // 移除其他高亮
+                document.querySelectorAll('.highlight').forEach(el => {
+                    el.classList.remove('highlight');
+                });
+
+                // 高亮当前条目
+                this.classList.add('highlight');
+
+                // 同步滚动到对应的响应或请求
+                if (scrollSyncEnabled) {
+                    const counterpartId = type === 'request' ? `response-${number}` : `request-${number}`;
+                    const counterpart = document.getElementById(counterpartId);
+                    if (counterpart) {
+                        counterpart.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        counterpart.classList.add('highlight');
+                    }
+                }
+            });
+
+            return entry;
+        }
+
+        // 格式化流式内容
+        function formatStreamContent(content) {
+            return content.split('\n').map(line => {
+                if (line.startsWith('event:')) {
+                    return `<div class="stream-line event-line">${escapeHtml(line)}</div>`;
+                } else if (line.startsWith('data:')) {
+                    return `<div class="stream-line data-line">${escapeHtml(line)}</div>`;
+                } else if (line.trim()) {
+                    return `<div class="stream-line">${escapeHtml(line)}</div>`;
+                }
+                return '';
+            }).join('');
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 更新统计信息
+        function updateStats() {
+            document.getElementById('requestCount').textContent = requestData.length;
+            document.getElementById('responseCount').textContent = responseData.length;
+            document.getElementById('totalCount').textContent = requestData.length + responseData.length;
+        }
+
+        // 添加滚动监听器
+        function addScrollListeners() {
+            const requestContent = document.getElementById('requestContent');
+            const responseContent = document.getElementById('responseContent');
+            const scrollTopBtn = document.getElementById('scrollTopBtn');
+
+            [requestContent, responseContent].forEach(element => {
+                element.addEventListener('scroll', function() {
+                    // 显示/隐藏回到顶部按钮
+                    if (this.scrollTop > 200) {
+                        scrollTopBtn.style.display = 'block';
+                    } else {
+                        scrollTopBtn.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        // 回到顶部
+        function scrollToTop() {
+            document.getElementById('requestContent').scrollTop = 0;
+            document.getElementById('responseContent').scrollTop = 0;
+        }
+
+        // 显示错误信息
+        function showError(message) {
+            const requestContainer = document.getElementById('requestContent');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.innerHTML = `
+                <strong>❌ 错误:</strong> ${message}
+            `;
+            requestContainer.innerHTML = '';
+            requestContainer.appendChild(errorDiv);
+        }
+
+        // 显示调试信息
+        function showDebugInfo() {
+            console.log('=== 调试信息 ===');
+            console.log('请求数量:', requestData.length);
+            console.log('响应数量:', responseData.length);
+
+            if (requestData.length > 0) {
+                console.log('第一个请求 (前200字符):', requestData[0].substring(0, 200) + '...');
+            }
+
+            if (responseData.length > 0) {
+                console.log('第一个响应 (前200字符):', responseData[0].substring(0, 200) + '...');
+            }
+
+            // 在界面上显示调试信息
+            const debugInfo = `
+                调试信息:
+                - 请求数量: ${requestData.length}
+                - 响应数量: ${responseData.length}
+                - 第一个请求长度: ${requestData[0] ? requestData[0].length : 0} 字符
+                - 第一个响应长度: ${responseData[0] ? responseData[0].length : 0} 字符
+            `;
+
+            alert(debugInfo);
+        }
+
+        // 页面加载时的处理
+        window.addEventListener('load', function() {
+            // 不再自动加载，而是提示用户选择文件
+            // 因为浏览器的安全限制可能阻止直接访问本地文件
+            console.log('页面加载完成，请手动选择app.log文件');
+        });
+
+        // 键盘快捷键
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'o':
+                        e.preventDefault();
+                        document.getElementById('fileInput').click();
+                        break;
+                    case 'r':
+                        e.preventDefault();
+                        loadDefaultLog();
+                        break;
+                    case 't':
+                        e.preventDefault();
+                        scrollToTop();
+                        break;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
