@@ -280,6 +280,214 @@
             margin: 0 10px;
         }
 
+        /* 弹窗样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 12px;
+            width: 80%;
+            max-width: 800px;
+            max-height: 80vh;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 25px;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .modal-body {
+            padding: 25px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .id-controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .id-search {
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .id-search:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .id-stats {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .id-stats-item {
+            display: inline-block;
+            margin-right: 25px;
+            margin-bottom: 5px;
+        }
+
+        .id-stats-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .id-stats-value {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .id-list {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 0;
+            margin: 0;
+        }
+
+        .id-item {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            padding: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .id-item:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .id-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .id-item-type {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .id-item-request {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .id-item-response {
+            background: #fce4ec;
+            color: #c2185b;
+        }
+
+        .id-item-number {
+            background: #f0f0f0;
+            color: #666;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .id-value {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+            word-break: break-all;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .id-item-context {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .no-ids {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-style: italic;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -329,6 +537,9 @@
             </button>
             <button class="file-input" onclick="showDebugInfo()">
                 🔍 调试信息
+            </button>
+            <button class="file-input" onclick="showAllIds()">
+                🆔 查看所有ID
             </button>
         </div>
         <div class="stats">
@@ -394,12 +605,55 @@
         ⬆️ 回到顶部
     </button>
 
+    <!-- ID弹窗 -->
+    <div id="idModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🆔 所有ID字段</h2>
+                <button class="modal-close" onclick="closeIdModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="id-controls">
+                    <input type="text" id="idSearch" class="id-search" placeholder="搜索ID..." onkeyup="filterIds()">
+                    <button class="file-input" onclick="exportIds()">📥 导出ID</button>
+                    <button class="file-input" onclick="refreshIds()">🔄 刷新</button>
+                <button class="file-input" onclick="toggleDebugMode()">🐛 调试模式</button>
+                </div>
+
+                <div class="id-stats" id="idStats">
+                    <div class="id-stats-item">
+                        <span class="id-stats-label">总数:</span>
+                        <span class="id-stats-value" id="totalIds">0</span>
+                    </div>
+                    <div class="id-stats-item">
+                        <span class="id-stats-label">请求中:</span>
+                        <span class="id-stats-value" id="requestIds">0</span>
+                    </div>
+                    <div class="id-stats-item">
+                        <span class="id-stats-label">响应中:</span>
+                        <span class="id-stats-value" id="responseIds">0</span>
+                    </div>
+                    <div class="id-stats-item">
+                        <span class="id-stats-label">唯一ID:</span>
+                        <span class="id-stats-value" id="uniqueIds">0</span>
+                    </div>
+                </div>
+
+                <div class="id-list" id="idList">
+                    <div class="no-ids">正在提取ID...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let requestData = [];
         let responseData = [];
         let scrollSyncEnabled = true;
         let currentPage = 1;
         let pageSize = 10;
+        let allIds = [];
+        let debugMode = false;
 
         // 文件输入处理
         document.getElementById('fileInput').addEventListener('change', function(e) {
@@ -557,6 +811,9 @@
                     responses: responseData.length
                 });
 
+                // 提取所有ID
+                extractAllIds();
+
                 // 验证解析结果
                 if (requestData.length !== responseData.length) {
                     console.warn('请求和响应数量不匹配:', {
@@ -639,6 +896,8 @@
                 }
 
                 if (requestData.length > 0 || responseData.length > 0) {
+                    // 提取所有ID
+                    extractAllIds();
                     displayData();
                     updateStats();
                 } else {
@@ -925,6 +1184,466 @@
 
             alert(debugInfo);
         }
+
+        // 提取所有ID
+        function extractAllIds() {
+            allIds = [];
+
+            // 从请求数据中提取ID
+            requestData.forEach((request, index) => {
+                const ids = extractIdsFromText(request, 'request', index + 1);
+                allIds.push(...ids);
+            });
+
+            // 从响应数据中提取ID
+            responseData.forEach((response, index) => {
+                const ids = extractIdsFromText(response, 'response', index + 1);
+                allIds.push(...ids);
+            });
+
+            console.log(`提取到 ${allIds.length} 个ID:`, allIds);
+        }
+
+        // 从文本中提取ID（严格匹配"id"和"tool_use_id"字段）
+        function extractIdsFromText(text, type, entryNumber) {
+            const ids = [];
+
+            // 严格匹配 "id" 字段 - 使用单词边界确保全词匹配
+            const idPattern = /"id"\s*:\s*"([^"]+)"/g;
+
+            // 严格匹配 "tool_use_id" 字段
+            const toolUseIdPattern = /"tool_use_id"\s*:\s*"([^"]+)"/g;
+
+            // 提取 "id" 字段
+            let match;
+            while ((match = idPattern.exec(text)) !== null) {
+                const idValue = match[1];
+
+                // 验证这是一个合法的JSON字段
+                if (isValidJsonField(text, match.index, match[0])) {
+                    ids.push({
+                        id: idValue.trim(),
+                        fieldName: 'id',
+                        type: type,
+                        entryNumber: entryNumber,
+                        context: getContextAroundId(text, match.index),
+                        fullMatch: match[0]
+                    });
+                }
+            }
+
+            // 提取 "tool_use_id" 字段
+            toolUseIdPattern.lastIndex = 0; // 重置正则表达式
+            while ((match = toolUseIdPattern.exec(text)) !== null) {
+                const idValue = match[1];
+
+                // 验证这是一个合法的JSON字段
+                if (isValidJsonField(text, match.index, match[0])) {
+                    ids.push({
+                        id: idValue.trim(),
+                        fieldName: 'tool_use_id',
+                        type: type,
+                        entryNumber: entryNumber,
+                        context: getContextAroundId(text, match.index),
+                        fullMatch: match[0]
+                    });
+                }
+            }
+
+            return ids;
+        }
+
+        // 验证是否是合法的JSON字段
+        function isValidJsonField(text, matchIndex, fullMatch) {
+            // 获取匹配位置的上下文
+            const contextStart = Math.max(0, matchIndex - 50);
+            const contextEnd = Math.min(text.length, matchIndex + fullMatch.length + 50);
+            const context = text.substring(contextStart, contextEnd);
+
+            // 检查字段是否在合法的JSON对象中
+            const validPatterns = [
+                // 在对象开始: {"id": "value"}
+                /\{[^}]*"id"\s*:/,
+                // 在对象中作为属性: , "id": "value"
+                /,\s*"id"\s*:/,
+                // 在行首: "id": "value"
+                /^\s*"id"\s*:/m,
+                // 在对象开始: {"tool_use_id": "value"}
+                /\{[^}]*"tool_use_id"\s*:/,
+                // 在对象中作为属性: , "tool_use_id": "value"
+                /,\s*"tool_use_id"\s*:/,
+                // 在行首: "tool_use_id": "value"
+                /^\s*"tool_use_id"\s*:/m
+            ];
+
+            // 至少要匹配一个合法模式
+            for (const pattern of validPatterns) {
+                if (pattern.test(context)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // 检查是否可能是误匹配
+        function isLikelyFalsePositive(idValue, fullText, matchIndex) {
+            // 检查ID值是否看起来像真正的ID
+            const suspiciousPatterns = [
+                /^\d+$/, // 纯数字（可能是数组索引）
+                /^[a-zA-Z]$/, // 单个字母
+                /^(true|false|null)$/, // JSON字面量
+                /^(message|content|role|data|type)$/, // 常见JSON字段名
+                /^.{1,2}$/, // 过短的值
+            ];
+
+            for (const pattern of suspiciousPatterns) {
+                if (pattern.test(idValue)) {
+                    return true;
+                }
+            }
+
+            // 检查匹配的上下文
+            const contextStart = Math.max(0, matchIndex - 20);
+            const contextEnd = Math.min(fullText.length, matchIndex + 50);
+            const context = fullText.substring(contextStart, contextEnd);
+
+            const suspiciousContexts = [
+                /data:\s*\{.*"id"/, // 在data值中的id
+                /\[[^\]]*"id"/, // 在数组中的id
+                /"content":.*"id"/, // 在content值中的id
+            ];
+
+            for (const pattern of suspiciousContexts) {
+                if (pattern.test(context)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // 检查是否已经被提取过（避免重复）
+        function alreadyExtracted(idValue, existingIds) {
+            return existingIds.some(existing => existing.id === idValue);
+        }
+
+        // 验证匹配的上下文是否有效
+        function isValidIdContext(beforeText, fullMatch) {
+            // 严格的验证：确保这是一个合法的JSON键值对
+            const fullContext = beforeText + fullMatch;
+
+            // 排除一些常见的误匹配情况
+            const invalidPatterns = [
+                /"id":\s*"/, // 如果后面紧跟另一个引号，可能是语法错误
+                /\bid\b.*\bid/, // 如果上下文中有多个id，可能是误匹配
+                /_id"/, // 如果是其他字段名的一部分
+                /"id_/, // 如果是id开头的字段
+                /:\s*\d+\s*,/, // 如果是数字值后面紧跟逗号，可能是数组索引
+                /\[\d+\]/, // 如果包含数组索引格式
+                /data:\s*\{.*"id"/, // 如果是在data值中的id
+            ];
+
+            // 检查是否匹配了无效模式
+            for (const pattern of invalidPatterns) {
+                if (pattern.test(fullContext)) {
+                    return false;
+                }
+            }
+
+            // 额外验证：确保上下文看起来像合法的JSON
+            const validIndicators = [
+                /\{.*"id":/, // 在对象中的id字段
+                /,\s*"id":/, // 作为对象属性的id字段
+                /^\s*"id":/  // 在行首的id字段
+            ];
+
+            // 至少要符合一个合法的JSON模式
+            let isValidJson = false;
+            for (const pattern of validIndicators) {
+                if (pattern.test(fullContext)) {
+                    isValidJson = true;
+                    break;
+                }
+            }
+
+            return isValidJson;
+        }
+
+        // 获取ID周围的上下文
+        function getContextAroundId(text, index) {
+            const start = Math.max(0, index - 50);
+            const end = Math.min(text.length, index + 100);
+            let context = text.substring(start, end);
+
+            // 清理上下文，移除多余的空白字符
+            context = context.replace(/\s+/g, ' ').trim();
+
+            // 如果上下文太长，截断并添加省略号
+            if (context.length > 150) {
+                context = context.substring(0, 150) + '...';
+            }
+
+            return context;
+        }
+
+        // 显示所有ID的弹窗
+        function showAllIds() {
+            if (allIds.length === 0) {
+                showError('没有找到ID数据。请先加载日志文件。');
+                return;
+            }
+
+            document.getElementById('idModal').style.display = 'block';
+            displayAllIds();
+        }
+
+        // 关闭ID弹窗
+        function closeIdModal() {
+            document.getElementById('idModal').style.display = 'none';
+        }
+
+        // 显示所有ID
+        function displayAllIds(filteredIds = null) {
+            const idList = document.getElementById('idList');
+            const idsToDisplay = filteredIds || allIds;
+
+            // 更新统计信息
+            updateIdStats(idsToDisplay);
+
+            if (idsToDisplay.length === 0) {
+                idList.innerHTML = '<div class="no-ids">没有找到匹配的ID</div>';
+                return;
+            }
+
+            // 生成ID列表HTML
+            let html = '';
+            idsToDisplay.forEach((idInfo, index) => {
+                html += createIdItemHtml(idInfo, index);
+            });
+
+            idList.innerHTML = html;
+        }
+
+        // 创建ID项的HTML
+        function createIdItemHtml(idInfo, index) {
+            // 根据字段名设置不同的样式
+            let fieldStyle = '';
+            if (idInfo.fieldName === 'id') {
+                fieldStyle = 'background: #e3f2fd; color: #1976d2;';
+            } else if (idInfo.fieldName === 'tool_use_id') {
+                fieldStyle = 'background: #f3e5f5; color: #7b1fa2;';
+            }
+
+            let debugInfo = '';
+            if (debugMode) {
+                debugInfo = `
+                    <div style="background: #fff3cd; padding: 5px; border-radius: 3px; font-size: 11px; color: #856404; margin-top: 8px;">
+                        <strong>字段名:</strong> ${idInfo.fieldName}<br>
+                        <strong>完整匹配:</strong> ${escapeHtml(idInfo.fullMatch || 'N/A')}<br>
+                        <strong>索引位置:</strong> ${index + 1}
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="id-item">
+                    <div class="id-item-header">
+                        <div>
+                            <span class="id-item-type id-item-${idInfo.type}">${idInfo.type}</span>
+                            <span class="id-item-number">#${idInfo.entryNumber}</span>
+                            <span style="background: ${fieldStyle} padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 600;">${idInfo.fieldName}</span>
+                        </div>
+                        <div style="font-size: 12px; color: #999;">索引: ${index + 1}</div>
+                    </div>
+                    <div class="id-value">${escapeHtml(idInfo.id)}</div>
+                    ${idInfo.context ? `<div class="id-item-context">上下文: ${escapeHtml(idInfo.context)}</div>` : ''}
+                    ${debugInfo}
+                </div>
+            `;
+        }
+
+        // 更新ID统计信息
+        function updateIdStats(ids) {
+            const totalIds = ids.length;
+            const requestIds = ids.filter(id => id.type === 'request').length;
+            const responseIds = ids.filter(id => id.type === 'response').length;
+            const uniqueIds = new Set(ids.map(id => id.id)).size;
+
+            // 按字段名统计
+            const idFields = ids.filter(id => id.fieldName === 'id').length;
+            const toolUseIdFields = ids.filter(id => id.fieldName === 'tool_use_id').length;
+
+            document.getElementById('totalIds').textContent = totalIds;
+            document.getElementById('requestIds').textContent = requestIds;
+            document.getElementById('responseIds').textContent = responseIds;
+            document.getElementById('uniqueIds').textContent = uniqueIds;
+
+            // 更新字段统计（添加到界面）
+            const statsContainer = document.getElementById('idStats');
+            const existingFieldStats = statsContainer.querySelector('.field-stats');
+
+            if (!existingFieldStats) {
+                const fieldStatsDiv = document.createElement('div');
+                fieldStatsDiv.className = 'field-stats';
+                fieldStatsDiv.innerHTML = `
+                    <div class="id-stats-item">
+                        <span class="id-stats-label">"id":</span>
+                        <span class="id-stats-value" style="color: #1976d2;">${idFields}</span>
+                    </div>
+                    <div class="id-stats-item">
+                        <span class="id-stats-label">"tool_use_id":</span>
+                        <span class="id-stats-value" style="color: #7b1fa2;">${toolUseIdFields}</span>
+                    </div>
+                `;
+                statsContainer.appendChild(fieldStatsDiv);
+            } else {
+                existingFieldStats.innerHTML = `
+                    <div class="id-stats-item">
+                        <span class="id-stats-label">"id":</span>
+                        <span class="id-stats-value" style="color: #1976d2;">${idFields}</span>
+                    </div>
+                    <div class="id-stats-item">
+                        <span class="id-stats-label">"tool_use_id":</span>
+                        <span class="id-stats-value" style="color: #7b1fa2;">${toolUseIdFields}</span>
+                    </div>
+                `;
+            }
+        }
+
+        // 搜索过滤ID
+        function filterIds() {
+            const searchTerm = document.getElementById('idSearch').value.toLowerCase().trim();
+
+            if (!searchTerm) {
+                displayAllIds();
+                return;
+            }
+
+            const filteredIds = allIds.filter(idInfo =>
+                idInfo.id.toLowerCase().includes(searchTerm) ||
+                idInfo.type.toLowerCase().includes(searchTerm) ||
+                idInfo.entryNumber.toString().includes(searchTerm) ||
+                idInfo.fieldName.toLowerCase().includes(searchTerm)
+            );
+
+            displayAllIds(filteredIds);
+        }
+
+        // 刷新ID列表
+        function refreshIds() {
+            extractAllIds();
+            displayAllIds();
+        }
+
+        // 切换调试模式
+        function toggleDebugMode() {
+            debugMode = !debugMode;
+            console.log(`调试模式: ${debugMode ? '开启' : '关闭'}`);
+
+            if (debugMode) {
+                // 在调试模式下，显示详细的匹配信息
+                console.log('=== ID提取调试信息 ===');
+                console.log(`总共找到 ${allIds.length} 个ID`);
+
+                // 按类型分组统计
+                const requests = allIds.filter(id => id.type === 'request');
+                const responses = allIds.filter(id => id.type === 'response');
+                console.log(`请求中的ID: ${requests.length}个`);
+                console.log(`响应中的ID: ${responses.length}个`);
+
+                // 按字段名分组统计
+                const idFields = allIds.filter(id => id.fieldName === 'id');
+                const toolUseIdFields = allIds.filter(id => id.fieldName === 'tool_use_id');
+                console.log(`"id" 字段: ${idFields.length}个`);
+                console.log(`"tool_use_id" 字段: ${toolUseIdFields.length}个`);
+
+                // 按类型和字段名交叉统计
+                const requestIdFields = idFields.filter(id => id.type === 'request');
+                const responseIdFields = idFields.filter(id => id.type === 'response');
+                const requestToolUseIdFields = toolUseIdFields.filter(id => id.type === 'request');
+                const responseToolUseIdFields = toolUseIdFields.filter(id => id.type === 'response');
+
+                console.log('详细统计:');
+                console.log(`  请求中的 "id": ${requestIdFields.length}个`);
+                console.log(`  响应中的 "id": ${responseIdFields.length}个`);
+                console.log(`  请求中的 "tool_use_id": ${requestToolUseIdFields.length}个`);
+                console.log(`  响应中的 "tool_use_id": ${responseToolUseIdFields.length}个`);
+
+                // 显示前15个匹配的详细信息
+                console.log('前15个匹配详情:');
+                allIds.slice(0, 15).forEach((idInfo, index) => {
+                    console.log(`${index + 1}. [${idInfo.type}] #${idInfo.entryNumber}: "${idInfo.fieldName}" = "${idInfo.id}"`);
+                    if (idInfo.fullMatch) {
+                        console.log(`   完整匹配: ${idInfo.fullMatch}`);
+                    }
+                    console.log(`   上下文: ${idInfo.context}`);
+                });
+
+                // 检查可能的重复ID
+                const duplicateIds = {};
+                allIds.forEach(idInfo => {
+                    const key = `${idInfo.fieldName}:${idInfo.id}`;
+                    if (!duplicateIds[key]) {
+                        duplicateIds[key] = [];
+                    }
+                    duplicateIds[key].push(idInfo);
+                });
+
+                const duplicates = Object.entries(duplicateIds).filter(([key, occurrences]) => occurrences.length > 1);
+                if (duplicates.length > 0) {
+                    console.log(`发现 ${duplicates.length} 个重复的字段+ID组合:`);
+                    duplicates.forEach(([key, occurrences]) => {
+                        console.log(`  ${key} 出现 ${occurrences.length} 次:`, occurrences.map(o => `${o.type}#${o.entryNumber}`));
+                    });
+                } else {
+                    console.log('没有发现重复的字段+ID组合');
+                }
+            }
+
+            // 重新显示列表以更新调试信息
+            displayAllIds();
+        }
+
+        // 导出ID列表
+        function exportIds() {
+            if (allIds.length === 0) {
+                showError('没有可导出的ID数据');
+                return;
+            }
+
+            let csvContent = 'Field Name,ID,Type,Entry Number,Context,Full Match\n';
+            allIds.forEach(idInfo => {
+                csvContent += `"${idInfo.fieldName}","${idInfo.id}","${idInfo.type}",${idInfo.entryNumber},"${idInfo.context || ''}","${idInfo.fullMatch || ''}"\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+
+            link.setAttribute('href', url);
+            link.setAttribute('download', `log_ids_and_tool_use_ids_${new Date().toISOString().slice(0, 10)}.csv`);
+            link.style.visibility = 'hidden';
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // 点击弹窗外部关闭
+        window.onclick = function(event) {
+            const modal = document.getElementById('idModal');
+            if (event.target === modal) {
+                closeIdModal();
+            }
+        }
+
+        // ESC键关闭弹窗
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeIdModal();
+            }
+        });
 
         // 页面加载时的处理
         window.addEventListener('load', function() {

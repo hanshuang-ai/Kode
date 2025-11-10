@@ -1,0 +1,49 @@
+Request Body:
+--------------------------------------------------------------------------------------
+{
+  "model" : "glm-4.5-air",
+  "max_tokens" : 512,
+  "messages" : [ {
+    "role" : "user",
+    "content" : "测试请求1"
+  } ],
+  "temperature" : 0.7,
+  "id" : "req_001",
+  "user_id" : "user_abc123",
+  "metadata" : {
+    "session_id" : "session_xyz789"
+  }
+}
+--------------------------------------------------------------------------------------
+Response Body:
+--------------------------------------------------------------------------------------
+event: message_start
+data: {"type": "message_start", "message": {"id": "msg_test1", "role": "assistant", "content": []}}
+event: content_block_delta
+data: {"type": "content_block_delta", "delta": {"type": "text_delta", "text": "测试响应1"}}
+event: message_stop
+data: {"type": "message_stop", "usage": {"input_tokens": 10, "output_tokens": 5}, "tool_use_id": "tool_001"}
+--------------------------------------------------------------------------------------
+Request Body:
+--------------------------------------------------------------------------------------
+{
+  "model" : "glm-4.5-air",
+  "max_tokens" : 1024,
+  "messages" : [ {
+    "role" : "user",
+    "content" : "测试请求2"
+  } ],
+  "temperature" : 0.5,
+  "request_id": "req_002",
+  "id": "req_002_main"
+}
+--------------------------------------------------------------------------------------
+Response Body:
+--------------------------------------------------------------------------------------
+event: message_start
+data: {"type": "message_start", "message": {"id": "msg_test2", "role": "assistant"}}
+event: tool_call
+data: {"id": "tool_002", "tool_use_id": "tool_use_002", "function": "test_function"}
+event: message_stop
+data: {"type": "message_stop", "response_id": "resp_002"}
+--------------------------------------------------------------------------------------
